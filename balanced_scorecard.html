@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>平衡計分卡系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: #1a1f2e;
+  color: #e2e8f0;
+  min-height: 100vh;
+  padding: 20px 24px;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.toolbar-left  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.toolbar-title { font-size: .78rem; color: #8899aa; }
+
+/* ── Buttons ── */
+.btn {
+  padding: 7px 14px;
+  border: none; border-radius: 7px;
+  cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: .82rem; font-weight: 500;
+  transition: all .15s;
+  display: inline-flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.btn-primary { background: #3b82f6; color: #fff; }
+.btn-primary:hover { background: #2563eb; }
+.btn-amber   { background: #f59e0b; color: #fff; }
+.btn-amber:hover { background: #d97706; }
+.btn-ghost   { background: rgba(255,255,255,.08); color: #ccd; border: 1px solid rgba(255,255,255,.12); }
+.btn-ghost:hover { background: rgba(255,255,255,.14); }
+.btn-danger  { background: #ef4444; color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+.btn-cancel  { background: rgba(255,255,255,.06); color: #aab; border: 1px solid rgba(255,255,255,.1); }
+.btn-cancel:hover { background: rgba(255,255,255,.1); }
+/* icon-only on small screens */
+.btn-icon-label { display: inline; }
+
+/* ── Filter Pills ── */
+.pill {
+  padding: 4px 12px; border-radius: 99px;
+  font-size: .75rem; font-weight: 600;
+  cursor: pointer; border: none; color: #fff;
+  opacity: .6; transition: opacity .15s;
+  white-space: nowrap;
+}
+.pill:hover, .pill.active { opacity: 1; }
+
+/* ── Card ── */
+.card {
+  background: #232b3e;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,.45);
+}
+.card-header {
+  background: #1e2536;
+  padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  flex-wrap: wrap; gap: 8px;
+}
+.card-title { font-size: 1rem; font-weight: 700; }
+.card-hint  { font-size: .75rem; color: #8899aa; }
+
+/* ── Desktop Table ── */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.sc-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.sc-table thead tr.row-staff th {
+  background: #2a3349; color: #c8d4e8;
+  font-weight: 500; font-size: .8rem;
+  padding: 13px 10px 10px;
+  text-align: center;
+  border-bottom: 2px solid rgba(255,255,255,.08);
+  white-space: nowrap; position: relative;
+}
+.sc-table thead tr.row-staff th.th-goal {
+  text-align: left; padding-left: 18px;
+  min-width: 220px; font-size: .76rem; color: #8899aa; font-weight: 400;
+}
+.sc-table thead tr.row-staff th.th-count {
+  min-width: 100px; color: #8899aa; font-weight: 400; font-size: .76rem;
+}
+.staff-name {
+  display: block; font-weight: 600; font-size: .86rem; color: #e2e8f0;
+  border-bottom: 1px dashed transparent; transition: border .15s;
+  outline: none; cursor: pointer;
+}
+.staff-name:hover, .staff-name:focus { border-bottom-color: #3b82f6; }
+.staff-role {
+  display: block; font-size: .7rem; color: #8899aa; margin-top: 2px;
+  outline: none; border-bottom: 1px dashed transparent; transition: border .15s; cursor: pointer;
+}
+.staff-role:hover, .staff-role:focus { border-bottom-color: #8899aa; }
+.del-staff-btn {
+  position: absolute; top: 4px; right: 4px;
+  background: none; border: none; color: #556;
+  font-size: .68rem; cursor: pointer; padding: 2px 4px; border-radius: 4px;
+}
+.del-staff-btn:hover { color: #ef4444; background: rgba(239,68,68,.1); }
+
+.sc-table tbody tr.row-data td {
+  padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,.05);
+  text-align: center; vertical-align: middle;
+}
+.sc-table tbody tr.row-data:last-child td { border-bottom: none; }
+.sc-table tbody tr.row-data:hover td { background: rgba(255,255,255,.03); }
+.sc-table tbody tr.row-data td.td-goal { text-align: left; padding-left: 18px; }
+
+.goal-wrap { display: flex; align-items: center; gap: 7px; }
+.persp-badge {
+  font-size: .65rem; font-weight: 700;
+  padding: 2px 7px; border-radius: 99px; color: #fff;
+  white-space: nowrap; flex-shrink: 0;
+}
+.goal-name {
+  outline: none; border-bottom: 1px dashed transparent;
+  transition: border .15s; cursor: pointer;
+  font-size: .88rem; color: #dde6f4; line-height: 1.4;
+}
+.goal-name:hover, .goal-name:focus { border-bottom-color: #3b82f6; }
+.del-goal-btn {
+  background: none; border: none; color: #445;
+  font-size: .72rem; cursor: pointer; padding: 2px 5px;
+  border-radius: 4px; flex-shrink: 0; margin-left: auto;
+  opacity: 0; transition: opacity .15s, color .15s;
+}
+tr.row-data:hover .del-goal-btn { opacity: 1; }
+.del-goal-btn:hover { color: #ef4444; }
+
+/* Checkbox */
+.check-cell { cursor: pointer; user-select: none; }
+.check-box {
+  width: 26px; height: 26px; border-radius: 6px;
+  border: 2px solid rgba(255,255,255,.15);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all .15s; margin: auto;
+}
+.check-box.checked { background: #22c55e; border-color: #22c55e; }
+.check-box svg { width: 13px; height: 13px; stroke: #fff; }
+
+/* Count column */
+.count-wrap { display: flex; align-items: center; gap: 7px; padding: 0 6px; }
+.count-bar-bg { flex: 1; height: 5px; background: rgba(255,255,255,.1); border-radius: 99px; overflow: hidden; min-width: 30px; }
+.count-bar-fill { height: 100%; background: #22c55e; border-radius: 99px; transition: width .4s; }
+.count-text { font-size: .8rem; color: #8899aa; white-space: nowrap; min-width: 26px; text-align: right; }
+
+/* Footer row */
+.sc-table tfoot tr.row-footer td {
+  background: #1e2536; padding: 9px 10px;
+  text-align: center; font-size: .8rem; color: #8899aa;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.sc-table tfoot tr.row-footer td.td-goal-label {
+  text-align: left; padding-left: 18px; font-size: .76rem;
+}
+.foot-count { font-weight: 700; font-size: .9rem; }
+.foot-total { font-weight: 400; color: #556; font-size: .73rem; }
+
+/* Summary bar */
+.summary-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 18px; background: #1a2030;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: .76rem; color: #6677aa;
+  flex-wrap: wrap; gap: 8px;
+}
+.staff-scores { display: flex; gap: 12px; flex-wrap: wrap; }
+.staff-score-item { color: #8899cc; }
+.staff-score-item strong { color: #aabbdd; }
+
+/* ── Mobile Card View ── */
+.mobile-view { display: none; }
+.mobile-persp-section { margin-bottom: 18px; }
+.mobile-persp-title {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; background: #1e2536;
+  font-size: .8rem; font-weight: 700; color: #8899cc;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.mobile-goal-card {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.mobile-goal-card:last-child { border-bottom: none; }
+.mobile-goal-header {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-bottom: 10px;
+}
+.mobile-goal-name {
+  font-size: .88rem; color: #dde6f4; line-height: 1.4; flex: 1;
+  outline: none; border-bottom: 1px dashed transparent; transition: border .15s;
+}
+.mobile-goal-name:focus { border-bottom-color: #3b82f6; }
+.mobile-del-btn {
+  background: none; border: none; color: #445;
+  font-size: .75rem; cursor: pointer; padding: 3px 6px;
+  border-radius: 4px; flex-shrink: 0;
+}
+.mobile-del-btn:hover { color: #ef4444; }
+.mobile-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+.mobile-staff-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; background: rgba(255,255,255,.04);
+  border-radius: 8px; cursor: pointer;
+  transition: background .15s; user-select: none;
+}
+.mobile-staff-item:hover { background: rgba(255,255,255,.08); }
+.mobile-staff-item.checked-item { background: rgba(34,197,94,.12); }
+.mobile-check-box {
+  width: 22px; height: 22px; border-radius: 5px;
+  border: 2px solid rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .15s;
+}
+.mobile-check-box.checked { background: #22c55e; border-color: #22c55e; }
+.mobile-check-box svg { width: 11px; height: 11px; stroke: #fff; }
+.mobile-staff-label { font-size: .8rem; color: #c8d4e8; line-height: 1.2; }
+.mobile-staff-label small { display: block; font-size: .68rem; color: #8899aa; }
+
+/* ── Modals ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.65); z-index: 999;
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #2a3349; border-radius: 16px;
+  padding: 26px; width: 500px; max-width: 100%;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  border: 1px solid rgba(255,255,255,.08);
+  animation: mIn .2s ease;
+}
+@keyframes mIn { from{transform:scale(.94);opacity:0} to{transform:scale(1);opacity:1} }
+.modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; }
+.form-group { margin-bottom: 15px; }
+.form-label { font-size: .8rem; font-weight: 600; color: #8899aa; margin-bottom: 6px; display: block; }
+.form-input, .form-select {
+  width: 100%; padding: 10px 12px;
+  background: #1e2536; border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 9px; color: #e2e8f0;
+  font-family: 'Noto Sans TC', sans-serif; font-size: .9rem;
+  transition: border .15s; appearance: none;
+}
+.form-input:focus, .form-select:focus { outline: none; border-color: #3b82f6; }
+.form-input::placeholder { color: #445; }
+.select-wrap { position: relative; }
+.select-wrap::after { content:'▾'; position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; color:#8899aa; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 99px; font-size: .76rem; font-weight: 600; color: #fff; }
+.chip-del { font-size: .62rem; background: rgba(0,0,0,.2); border-radius: 50%; width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.chip-del:hover { background: rgba(0,0,0,.45); }
+.staff-edit-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.empty-msg td { text-align:center; color:#445; font-style:italic; padding:24px; }
+.c0{background:#3b82f6} .c1{background:#22c55e} .c2{background:#f59e0b} .c3{background:#a855f7} .c4{background:#ef4444} .c5{background:#14b8a6}
+
+/* ── Responsive Breakpoints ── */
+
+/* Tablet: hide some button labels */
+@media (max-width: 900px) {
+  body { padding: 14px 16px; }
+  .btn-icon-label { display: none; }
+  .btn { padding: 7px 11px; }
+}
+
+/* Mobile: switch to card layout */
+@media (max-width: 640px) {
+  body { padding: 10px 12px; }
+  .toolbar { gap: 6px; }
+  .toolbar-right { margin-left: 0; width: 100%; }
+  .pill { padding: 4px 10px; font-size: .72rem; }
+  .table-wrap { display: none; }
+  .mobile-view { display: block; }
+  .card-hint { display: none; }
+  .summary-bar { font-size: .72rem; padding: 10px 14px; }
+  .staff-scores { gap: 8px; }
+  .modal { padding: 20px 16px; }
+  .staff-edit-item { flex-wrap: wrap; }
+  .staff-edit-item input { min-width: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <button class="btn btn-ghost" onclick="openStaffModal()">👤 <span class="btn-icon-label">管理人員</span></button>
+    <button class="btn btn-ghost" onclick="openPerspModal()">🏷️ <span class="btn-icon-label">管理構面</span></button>
+    <button class="btn btn-amber" onclick="openGoalModal()">＋ <span class="btn-icon-label">新增目標</span></button>
+    <button class="btn btn-ghost" onclick="exportCSV()">📥 <span class="btn-icon-label">匯出 CSV</span></button>
+    <button class="btn btn-ghost" onclick="document.getElementById('csv-file-input').click()">📤 <span class="btn-icon-label">匯入 CSV</span></button>
+    <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="importCSV(this)">
+  </div>
+  <div class="toolbar-right">
+    <span class="toolbar-title">篩選：</span>
+    <button class="pill active" style="background:#445;" id="pill-all" onclick="filterPersp('all')">全部</button>
+    <span id="persp-pills"></span>
+  </div>
+</div>
+
+<!-- Card -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">目標達成矩陣</span>
+    <span class="card-hint">點擊格子打勾即可記錄</span>
+  </div>
+
+  <!-- Desktop table -->
+  <div class="table-wrap">
+    <table class="sc-table" id="sc-table"></table>
+  </div>
+
+  <!-- Mobile card view -->
+  <div class="mobile-view" id="mobile-view"></div>
+
+  <div class="summary-bar" id="summary-bar"></div>
+</div>
+
+<!-- Goal Modal -->
+<div class="modal-overlay" id="modal-goal">
+  <div class="modal">
+    <div class="modal-title">🎯 新增目標</div>
+    <div class="form-group">
+      <label class="form-label">目標名稱</label>
+      <input class="form-input" id="inp-goal-name" placeholder="例如：提升客戶滿意度" onkeydown="if(event.key==='Enter')addGoal()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">構面分類</label>
+      <div class="select-wrap"><select class="form-select" id="sel-goal-persp"></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal('modal-goal')">取消</button>
+      <button class="btn btn-primary" onclick="addGoal()">新增目標</button>
+    </div>
+  </div>
+</div>
+
+<!-- Staff Modal -->
+<div class="modal-overlay" id="modal-staff">
+  <div class="modal">
+    <div class="modal-title">👤 管理中心人員</div>
+    <div id="staff-edit-list" style="max-height:240px;overflow-y:auto;margin-bottom:14px;"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+      <input class="form-input" id="inp-new-staff" placeholder="姓名" style="flex:1;min-width:80px;" onkeydown="if(event.key==='Enter')addStaff()">
+      <input class="form-input" id="inp-new-role" placeholder="職稱（選填）" style="flex:1;min-width:80px;">
+      <button class="btn btn-primary" onclick="addStaff()">新增</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modal-staff');render()">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- Perspective Modal -->
+<div class="modal-overlay" id="modal-persp">
+  <div class="modal">
+    <div class="modal-title">🏷️ 管理構面分類</div>
+    <div class="chip-list" id="persp-chip-list"></div>
+    <div style="display:flex;gap:8px;">
+      <input class="form-input" id="inp-new-persp" placeholder="新增構面名稱" style="flex:1;" onkeydown="if(event.key==='Enter')addPerspective()">
+      <button class="btn btn-primary" onclick="addPerspective()">新增</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('modal-persp');render()">完成</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let S = {
+  perspectives: [
+    '一、AI技術開發與深化',
+    '二、數位生態與產業賦能',
+    '三、市場拓展與資源爭取',
+    '四、品牌影響力與跨部共創',
+  ],
+  staff: [
+    {name:'王小明',role:'主任'},{name:'李美華',role:'護理師'},
+    {name:'陳大偉',role:'醫師'},{name:'林佳芬',role:'行政人員'},
+  ],
+  goals: [
+    {id:1, name:'1.1 智慧高爾夫精準化：揮桿識別準確率90%以上，2處場域部署，累積500位用戶', perspective:'一、AI技術開發與深化'},
+    {id:2, name:'1.2 AI輕量化模組開發：開發10項可商用AI小模組，建立技術API文檔', perspective:'一、AI技術開發與深化'},
+    {id:3, name:'1.3 AI內部工具導入：導入至少2項AI工具，提升工作效率15%以上', perspective:'一、AI技術開發與深化'},
+    {id:4, name:'2.1 產業需求對接：完成10家以上業者需求調研，產出運動科技場域需求地圖', perspective:'二、數位生態與產業賦能'},
+    {id:5, name:'2.2 數位社群經營：FIND會員新增7件，舉辦至少2場技術媒合小聚', perspective:'二、數位生態與產業賦能'},
+    {id:6, name:'2.3 軟硬整合解決方案：打造2項AI+智慧硬體整合方案，完成PoC場域實證', perspective:'二、數位生態與產業賦能'},
+    {id:7, name:'2.4 AI顧問服務：提供至少5家企業AI轉型顧問諮詢，產出技術導入建議書', perspective:'二、數位生態與產業賦能'},
+    {id:8, name:'3.1 國際實證落地：與亞太地區至少1家海外業者簽署MOU，完成1案跨境技術實證', perspective:'三、市場拓展與資源爭取'},
+    {id:9, name:'3.2 跨部會資源爭取：成功投標運動部或數發部新興計畫', perspective:'三、市場拓展與資源爭取'},
+    {id:10, name:'3.3 營收目標達成：年度總營收達7,500萬（政府6,000萬＋民間1,500萬）', perspective:'三、市場拓展與資源爭取'},
+    {id:11, name:'4.1 專業觀測發表：發表至少2篇運動科技產業報告或AI技術白皮書', perspective:'四、品牌影響力與跨部共創'},
+    {id:12, name:'4.2 媒體精準行銷：至少5則主流媒體報導，品牌曝量達10萬人次以上', perspective:'四、品牌影響力與跨部共創'},
+    {id:13, name:'4.3 跨部門亮點專案：與其他部門合作打造1項指標性亮點展示主題', perspective:'四、品牌影響力與跨部共創'},
+  ],
+  checks:{}, filter:'all', nextId:14,
+};
+
+const COLORS=['c0','c1','c2','c3','c4','c5'];
+function cc(p){const i=S.perspectives.indexOf(p);return COLORS[i%COLORS.length]||'c0';}
+function getChecked(gid,sn){return !!(S.checks[gid]&&S.checks[gid][sn]);}
+function toggleCheck(gid,sn){if(!S.checks[gid])S.checks[gid]={};S.checks[gid][sn]=!S.checks[gid][sn];render();}
+
+function render(){renderPills();renderTable();renderMobile();renderSummary();saveState();}
+
+function renderPills(){
+  document.getElementById('persp-pills').innerHTML=S.perspectives.map((p,i)=>
+    `<button class="pill ${COLORS[i%6]}" style="opacity:${S.filter===p?1:.6}" onclick="filterPersp('${p}')">${p}</button>`
+  ).join('');
+  document.getElementById('pill-all').style.opacity=S.filter==='all'?'1':'.6';
+}
+
+/* ── Desktop Table ── */
+function renderTable(){
+  const table=document.getElementById('sc-table');
+  const goals=S.filter==='all'?S.goals:S.goals.filter(g=>g.perspective===S.filter);
+  const staffCols=S.staff.map(s=>`
+    <th>
+      <button class="del-staff-btn" onclick="delStaff('${esc(s.name)}')">✕</button>
+      <span class="staff-name" contenteditable="true" onblur="renameStaff('${esc(s.name)}',this.textContent.trim())">${s.name}</span>
+      <span class="staff-role" contenteditable="true" onblur="renameRole('${esc(s.name)}',this.textContent.trim())">${s.role||''}</span>
+    </th>`).join('');
+  const dataRows=goals.length===0
+    ?`<tr class="empty-msg"><td colspan="${S.staff.length+2}">尚無目標，請點擊「新增目標」</td></tr>`
+    :goals.map(g=>{
+      const achieved=S.staff.filter(s=>getChecked(g.id,s.name)).length;
+      const total=S.staff.length;
+      const pct=total?Math.round(achieved/total*100):0;
+      return `<tr class="row-data">
+        <td class="td-goal">
+          <div class="goal-wrap">
+            <span class="persp-badge ${cc(g.perspective)}">${g.perspective}</span>
+            <span class="goal-name" contenteditable="true" onblur="renameGoal(${g.id},this.textContent.trim())">${g.name}</span>
+            <button class="del-goal-btn" onclick="deleteGoal(${g.id})">✕</button>
+          </div>
+        </td>
+        ${S.staff.map(s=>`
+          <td class="check-cell" onclick="toggleCheck(${g.id},'${esc(s.name)}')">
+            <div class="check-box ${getChecked(g.id,s.name)?'checked':''}">
+              ${getChecked(g.id,s.name)?'<svg viewBox="0 0 24 24" fill="none" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}
+            </div>
+          </td>`).join('')}
+        <td>
+          <div class="count-wrap">
+            <div class="count-bar-bg"><div class="count-bar-fill" style="width:${pct}%"></div></div>
+            <span class="count-text">${achieved}/${total}</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  const footCells=S.staff.map(()=>`<td><span class="foot-count">${goals.length}</span></td>`).join('');
+  table.innerHTML=`
+    <thead><tr class="row-staff">
+      <th class="th-goal">目標</th>${staffCols}<th class="th-count">人數</th>
+    </tr></thead>
+    <tbody>${dataRows}</tbody>
+    <tfoot><tr class="row-footer">
+      <td class="td-goal-label">目標個數</td>${footCells}<td></td>
+    </tr></tfoot>`;
+}
+
+/* ── Mobile Card View ── */
+function renderMobile(){
+  const cont=document.getElementById('mobile-view');
+  const goals=S.filter==='all'?S.goals:S.goals.filter(g=>g.perspective===S.filter);
+  const perspToShow=S.filter==='all'?S.perspectives:S.perspectives.filter(p=>p===S.filter);
+
+  cont.innerHTML=perspToShow.map((persp,pi)=>{
+    const pGoals=goals.filter(g=>g.perspective===persp);
+    if(!pGoals.length) return '';
+    const colorIdx=S.perspectives.indexOf(persp);
+    const goalsHtml=pGoals.map(g=>`
+      <div class="mobile-goal-card">
+        <div class="mobile-goal-header">
+          <span class="mobile-goal-name" contenteditable="true" onblur="renameGoal(${g.id},this.textContent.trim())">${g.name}</span>
+          <button class="mobile-del-btn" onclick="deleteGoal(${g.id})">✕</button>
+        </div>
+        <div class="mobile-staff-grid">
+          ${S.staff.map(s=>`
+            <div class="mobile-staff-item ${getChecked(g.id,s.name)?'checked-item':''}" onclick="toggleCheck(${g.id},'${esc(s.name)}')">
+              <div class="mobile-check-box ${getChecked(g.id,s.name)?'checked':''}">
+                ${getChecked(g.id,s.name)?'<svg viewBox="0 0 24 24" fill="none" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}
+              </div>
+              <div class="mobile-staff-label">
+                ${s.name}
+                ${s.role?`<small>${s.role}</small>`:''}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+    return `
+      <div class="mobile-persp-section">
+        <div class="mobile-persp-title">
+          <span class="persp-badge ${COLORS[colorIdx%6]}">${persp}</span>
+          ${pGoals.length} 個目標
+        </div>
+        ${goalsHtml}
+      </div>`;
+  }).join('') || '<p style="color:#445;padding:24px;text-align:center;font-style:italic;">尚無目標</p>';
+}
+
+function renderSummary(){
+  const goals=S.filter==='all'?S.goals:S.goals.filter(g=>g.perspective===S.filter);
+  const staffScores=S.staff.map(s=>{
+    const cnt=goals.filter(g=>getChecked(g.id,s.name)).length;
+    return `<span class="staff-score-item"><strong>${s.name}</strong>: ${cnt}/${goals.length}</span>`;
+  }).join('');
+  document.getElementById('summary-bar').innerHTML=`
+    <span>共 ${S.staff.length} 位人員・${goals.length} 個目標</span>
+    <div class="staff-scores">${staffScores}</div>`;
+}
+
+/* ── Helpers ── */
+function esc(s){ return s.replace(/'/g,"\\'"); }
+function filterPersp(p){S.filter=p;render();}
+function renameGoal(id,n){if(n){const g=S.goals.find(g=>g.id===id);if(g)g.name=n;}}
+function deleteGoal(id){S.goals=S.goals.filter(g=>g.id!==id);delete S.checks[id];render();}
+function renameStaff(old,n){
+  if(!n||n===old)return;
+  const idx=S.staff.findIndex(s=>s.name===old);if(idx<0)return;
+  S.staff[idx].name=n;
+  S.goals.forEach(g=>{if(S.checks[g.id]&&S.checks[g.id][old]!==undefined){S.checks[g.id][n]=S.checks[g.id][old];delete S.checks[g.id][old];}});
+  render();
+}
+function renameRole(sn,r){const s=S.staff.find(s=>s.name===sn);if(s)s.role=r;}
+function delStaff(name){
+  if(!confirm(`確定移除 ${name}？`))return;
+  S.staff=S.staff.filter(s=>s.name!==name);
+  S.goals.forEach(g=>{if(S.checks[g.id])delete S.checks[g.id][name];});
+  render();
+}
+
+/* ── Modals ── */
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});});
+
+function openGoalModal(persp){
+  document.getElementById('sel-goal-persp').innerHTML=S.perspectives.map(p=>`<option value="${p}" ${p===persp?'selected':''}>${p}</option>`).join('');
+  document.getElementById('inp-goal-name').value='';
+  openModal('modal-goal');
+}
+function addGoal(){
+  const name=document.getElementById('inp-goal-name').value.trim();
+  const perspective=document.getElementById('sel-goal-persp').value;
+  if(!name){alert('請輸入目標名稱');return;}
+  S.goals.push({id:S.nextId++,name,perspective});
+  closeModal('modal-goal');render();
+}
+function openStaffModal(){renderStaffEdit();openModal('modal-staff');}
+function renderStaffEdit(){
+  document.getElementById('staff-edit-list').innerHTML=S.staff.map((s,i)=>`
+    <div class="staff-edit-item">
+      <input class="form-input" value="${s.name}" placeholder="姓名" onblur="updateStaffName(${i},this.value)" style="flex:1;min-width:0;padding:7px 9px;">
+      <input class="form-input" value="${s.role||''}" placeholder="職稱" onblur="updateStaffRole(${i},this.value)" style="flex:1;min-width:0;padding:7px 9px;">
+      <button class="btn btn-danger" style="padding:7px 10px;font-size:.78rem;" onclick="removeStaffIdx(${i})">刪除</button>
+    </div>`).join('')||'<p style="color:#445;font-size:.85rem;">尚無人員</p>';
+}
+function updateStaffName(idx,n){
+  n=n.trim();if(!n)return;
+  const old=S.staff[idx].name;S.staff[idx].name=n;
+  S.goals.forEach(g=>{if(S.checks[g.id]&&S.checks[g.id][old]!==undefined){S.checks[g.id][n]=S.checks[g.id][old];delete S.checks[g.id][old];}});
+}
+function updateStaffRole(idx,r){S.staff[idx].role=r.trim();}
+function removeStaffIdx(idx){
+  if(!confirm('確定刪除？'))return;
+  const name=S.staff[idx].name;S.staff.splice(idx,1);
+  S.goals.forEach(g=>{if(S.checks[g.id])delete S.checks[g.id][name];});
+  renderStaffEdit();
+}
+function addStaff(){
+  const name=document.getElementById('inp-new-staff').value.trim();
+  const role=document.getElementById('inp-new-role').value.trim();
+  if(!name)return;
+  if(S.staff.find(s=>s.name===name)){alert('人員已存在');return;}
+  S.staff.push({name,role});
+  document.getElementById('inp-new-staff').value='';
+  document.getElementById('inp-new-role').value='';
+  renderStaffEdit();
+}
+function openPerspModal(){renderPerspChips();openModal('modal-persp');}
+function renderPerspChips(){
+  document.getElementById('persp-chip-list').innerHTML=S.perspectives.map((p,i)=>`
+    <div class="chip ${COLORS[i%6]}">
+      <span contenteditable="true" onblur="renamePerspective(${i},this.textContent.trim())">${p}</span>
+      <span class="chip-del" onclick="removePerspective(${i})">✕</span>
+    </div>`).join('');
+}
+function renamePerspective(idx,n){
+  if(!n)return;const old=S.perspectives[idx];S.perspectives[idx]=n;
+  S.goals.forEach(g=>{if(g.perspective===old)g.perspective=n;});
+}
+function removePerspective(idx){
+  if(!confirm('刪除此構面？'))return;
+  S.perspectives.splice(idx,1);renderPerspChips();
+}
+function addPerspective(){
+  const name=document.getElementById('inp-new-persp').value.trim();
+  if(!name)return;
+  if(S.perspectives.includes(name)){alert('已存在');return;}
+  S.perspectives.push(name);
+  document.getElementById('inp-new-persp').value='';
+  renderPerspChips();
+}
+
+/* ── CSV Export ── */
+function exportCSV(){
+  const goals=S.goals;
+  const staffNames=S.staff.map(s=>s.name);
+  const staffRoles=S.staff.map(s=>s.role||'');
+  const rows=[];
+  rows.push(['##META']);
+  rows.push(['##PERSPECTIVES',...S.perspectives]);
+  rows.push(['##STAFF_NAMES',...staffNames]);
+  rows.push(['##STAFF_ROLES',...staffRoles]);
+  rows.push([]);
+  rows.push(['構面','目標',...staffNames]);
+  goals.forEach(g=>{
+    const checks=staffNames.map(sn=>getChecked(g.id,sn)?'1':'0');
+    rows.push([g.perspective,g.name,...checks]);
+  });
+  const csv=rows.map(r=>r.map(cell=>{
+    const s=String(cell??'');
+    return s.includes(',')||s.includes('"')||s.includes('\n')?'"'+s.replace(/"/g,'""')+'"':s;
+  }).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='平衡計分卡.csv';a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ── CSV Import ── */
+function importCSV(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      let text=e.target.result;
+      if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+      const rows=parseCSV(text);
+      if(!rows.length){alert('CSV 檔案是空的');return;}
+      let perspectives=[],staffNames=[],staffRoles=[],dataRows=[];
+      let inData=false;
+      for(const row of rows){
+        if(!row.length||(row.length===1&&row[0]===''))continue;
+        if(row[0]==='##META')continue;
+        if(row[0]==='##PERSPECTIVES'){perspectives=row.slice(1).filter(Boolean);continue;}
+        if(row[0]==='##STAFF_NAMES'){staffNames=row.slice(1).filter(Boolean);continue;}
+        if(row[0]==='##STAFF_ROLES'){staffRoles=row.slice(1);continue;}
+        if(row[0]==='構面'&&row[1]==='目標'){inData=true;continue;}
+        if(inData)dataRows.push(row);
+      }
+      if(!inData&&rows.length>1){
+        const header=rows[0];staffNames=header.slice(2);
+        staffRoles=staffNames.map(()=>'');dataRows=rows.slice(1);
+        perspectives=[...new Set(dataRows.map(r=>r[0]).filter(Boolean))];
+      }
+      if(!staffNames.length){alert('無法解析人員資料');return;}
+      const newStaff=staffNames.map((n,i)=>({name:n,role:staffRoles[i]||''}));
+      const newGoals=[],newChecks={};let nextId=1;
+      dataRows.forEach(row=>{
+        if(!row[1])return;
+        const g={id:nextId++,name:row[1],perspective:row[0]||''};
+        newGoals.push(g);newChecks[g.id]={};
+        staffNames.forEach((sn,i)=>{newChecks[g.id][sn]=row[2+i]==='1';});
+      });
+      if(!newGoals.length){alert('CSV 中找不到目標資料');return;}
+      if(!confirm(`確定匯入？\n・${newStaff.length} 位人員\n・${newGoals.length} 個目標\n\n這將覆蓋目前所有資料。`))return;
+      S.perspectives=perspectives.length?perspectives:[...new Set(newGoals.map(g=>g.perspective).filter(Boolean))];
+      S.staff=newStaff;S.goals=newGoals;S.checks=newChecks;S.nextId=nextId;S.filter='all';
+      render();alert('匯入成功！');
+    }catch(err){alert('匯入失敗：'+err.message);}
+    input.value='';
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+function parseCSV(text){
+  const rows=[];let row=[],cell='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'&&text[i+1]==='"'){cell+='"';i++;}
+      else if(c==='"')inQ=false;
+      else cell+=c;
+    }else{
+      if(c==='"')inQ=true;
+      else if(c===','){row.push(cell);cell='';}
+      else if(c==='\n'||(c==='\r'&&text[i+1]==='\n')){
+        if(c==='\r')i++;
+        row.push(cell);rows.push(row);row=[];cell='';
+      }else cell+=c;
+    }
+  }
+  if(cell||row.length){row.push(cell);rows.push(row);}
+  return rows;
+}
+
+// ── Persist ──
+function saveState(){
+  try{
+    localStorage.setItem('bsc_state', JSON.stringify({
+      perspectives: S.perspectives,
+      staff: S.staff,
+      goals: S.goals,
+      checks: S.checks,
+      nextId: S.nextId,
+    }));
+  }catch(e){}
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem('bsc_state');
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    if(saved.perspectives) S.perspectives = saved.perspectives;
+    if(saved.staff)        S.staff        = saved.staff;
+    if(saved.goals)        S.goals        = saved.goals;
+    if(saved.checks)       S.checks       = saved.checks;
+    if(saved.nextId)       S.nextId       = saved.nextId;
+  }catch(e){}
+}
+
+loadState();
+render();
+</script>
+</body>
+</html>
