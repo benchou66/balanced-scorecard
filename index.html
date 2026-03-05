@@ -665,7 +665,10 @@ function renderTable(){
         </td>
       </tr>`;
     }).join('');
-  const footCells=S.staff.map(()=>`<td><span class="foot-count">${goals.length}</span></td>`).join('');
+  const footCells=S.staff.map(s=>{
+    const cnt=goals.filter(g=>getChecked(g.id,s.name)).length;
+    return `<td><span class="foot-count">${cnt}/${goals.length}</span></td>`;
+  }).join('');
   table.innerHTML=`
     <thead><tr class="row-staff">
       <th class="th-goal">目標</th>${staffCols}<th class="th-count">人數</th>
