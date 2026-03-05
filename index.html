@@ -786,34 +786,97 @@ function parseCSV(text){
   return rows;
 }
 
-// ── Persist ──
-function saveState(){
-  try{
-    localStorage.setItem('bsc_state', JSON.stringify({
-      perspectives: S.perspectives,
-      staff: S.staff,
-      goals: S.goals,
-      checks: S.checks,
-      nextId: S.nextId,
-    }));
-  }catch(e){}
+// ── Supabase 設定 ──
+const SB_URL = 'https://deqihkcodaipixbrbvcb.supabase.co';
+const SB_KEY = 'sb_publishable_OaR34whtAYmdtMR4jbO5Rw_P-xW66EI';
+const SB_HDR = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` };
+let _saveTimer = null;
+
+// ── 讀取資料 ──
+async function loadFromSupabase() {
+  showStatus('⏳ 載入資料中…');
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/scorecard?id=eq.main&select=data`, { headers: SB_HDR });
+    const rows = await res.json();
+    if (rows && rows.length > 0 && rows[0].data && Object.keys(rows[0].data).length > 0) {
+      const d = rows[0].data;
+      if (d.perspectives) S.perspectives = d.perspectives;
+      if (d.staff)        S.staff        = d.staff;
+      if (d.goals)        S.goals        = d.goals;
+      if (d.checks)       S.checks       = d.checks;
+      if (d.nextId)       S.nextId       = d.nextId;
+      showStatus('');
+    } else {
+      // 第一次使用，先把預設資料存進去
+      showStatus('');
+      await saveToSupabase();
+    }
+  } catch(e) {
+    showStatus('⚠️ 載入失敗，使用本機暫存');
+    loadLocal();
+  }
+  render();
 }
 
-function loadState(){
-  try{
-    const raw = localStorage.getItem('bsc_state');
-    if(!raw) return;
-    const saved = JSON.parse(raw);
-    if(saved.perspectives) S.perspectives = saved.perspectives;
-    if(saved.staff)        S.staff        = saved.staff;
-    if(saved.goals)        S.goals        = saved.goals;
-    if(saved.checks)       S.checks       = saved.checks;
-    if(saved.nextId)       S.nextId       = saved.nextId;
-  }catch(e){}
+// ── 儲存資料（防抖 1.5 秒）──
+function saveState() {
+  saveLocal();
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveToSupabase, 1500);
 }
 
-loadState();
-render();
+async function saveToSupabase() {
+  const payload = { perspectives: S.perspectives, staff: S.staff, goals: S.goals, checks: S.checks, nextId: S.nextId };
+  try {
+    showStatus('💾 儲存中…');
+    const res = await fetch(`${SB_URL}/rest/v1/scorecard?id=eq.main`, {
+      method: 'PATCH',
+      headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ data: payload, updated_at: new Date().toISOString() }),
+    });
+    if (res.ok) {
+      showStatus('✅ 已儲存');
+      setTimeout(() => showStatus(''), 2000);
+    } else {
+      const err = await res.text();
+      console.error('Supabase save error:', err);
+      showStatus('⚠️ 儲存失敗');
+    }
+  } catch(e) {
+    showStatus('⚠️ 網路錯誤，已存本機');
+  }
+}
+
+// ── 本機備份 ──
+function saveLocal() {
+  try { localStorage.setItem('bsc_backup', JSON.stringify({ perspectives:S.perspectives, staff:S.staff, goals:S.goals, checks:S.checks, nextId:S.nextId })); } catch(e){}
+}
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem('bsc_backup');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.perspectives) S.perspectives = d.perspectives;
+    if (d.staff)        S.staff        = d.staff;
+    if (d.goals)        S.goals        = d.goals;
+    if (d.checks)       S.checks       = d.checks;
+    if (d.nextId)       S.nextId       = d.nextId;
+  } catch(e){}
+}
+
+// ── 狀態提示 ──
+function showStatus(msg) {
+  let el = document.getElementById('save-status');
+  if (!el) {
+    el = document.createElement('span');
+    el.id = 'save-status';
+    el.style.cssText = 'font-size:.75rem;color:#8899aa;margin-left:8px;';
+    document.querySelector('.card-header').appendChild(el);
+  }
+  el.textContent = msg;
+}
+
+loadFromSupabase();
 </script>
 </body>
 </html>
