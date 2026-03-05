@@ -148,7 +148,15 @@ body {
 tr.row-data:hover .del-goal-btn { opacity: 1; }
 .del-goal-btn:hover { color: #ef4444; }
 
-/* Note popup */
+/* Rank chart */
+.rank-item { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.rank-medal { font-size:1.1rem; width:28px; text-align:center; flex-shrink:0; }
+.rank-name { width:80px; font-size:.85rem; color:#e2e8f0; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rank-role { width:130px; font-size:.72rem; color:#8899aa; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rank-bar-wrap { flex:1; display:flex; align-items:center; gap:8px; }
+.rank-bar-bg { flex:1; height:18px; background:rgba(255,255,255,.07); border-radius:99px; overflow:hidden; }
+.rank-bar-fill { height:100%; border-radius:99px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+.rank-count { font-size:.82rem; font-weight:700; color:#e2e8f0; min-width:36px; text-align:right; white-space:nowrap; }
 .note-popup {
   position: fixed; z-index: 1000;
   background: #2a3349; border: 1px solid rgba(255,255,255,.15);
@@ -175,13 +183,13 @@ tr.row-data:hover .del-goal-btn { opacity: 1; }
 .check-cell-inner { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 2px; }
 .check-note-text { font-size: .65rem; color: #f59e0b; text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 .check-box {
-  width: 9px; height: 9px; border-radius: 2px;
-  border: 1px solid rgba(255,255,255,.15);
+  width: 26px; height: 26px; border-radius: 6px;
+  border: 2px solid rgba(255,255,255,.15);
   display: inline-flex; align-items: center; justify-content: center;
   transition: all .15s; margin: auto;
 }
-.check-box.checked { background: #22c55e; border-color: #22c55e; }
-.check-box svg { width: 5px; height: 5px; stroke: #fff; }
+.check-box.checked { background: #22c55e; border-color: #22c55e; width: 9px; height: 9px; border-radius: 2px; border-width: 1px; }
+.check-box svg { width: 5px; height: 5px; stroke: #fff; stroke-width: 4; }
 
 /* Count column */
 .count-wrap { display: flex; align-items: center; gap: 7px; padding: 0 6px; }
@@ -313,7 +321,7 @@ tr.row-data:hover .del-goal-btn { opacity: 1; }
   .sc-table thead tr.row-staff th { padding: 11px 7px 8px; font-size: .75rem; }
   .sc-table tbody tr.row-data td { padding: 9px 7px; }
   .sc-table thead tr.row-staff th.th-goal { min-width: 500px; }
-  .check-box { width: 9px; height: 9px; }
+  .check-box { width: 26px; height: 26px; }
 }
 
 /* Tablet: hide button labels, compact table */
@@ -329,7 +337,7 @@ tr.row-data:hover .del-goal-btn { opacity: 1; }
   .sc-table tbody tr.row-data td.td-goal { padding-left: 12px; }
   .persp-badge { font-size: .6rem; padding: 1px 5px; }
   .goal-name { font-size: .8rem; }
-  .check-box { width: 9px; height: 9px; border-radius: 2px; }
+  .check-box { width: 26px; height: 26px; border-radius: 6px; }
   .check-box svg { width: 11px; height: 11px; }
   .count-wrap { gap: 4px; padding: 0 3px; }
   .count-text { font-size: .72rem; min-width: 22px; }
@@ -389,6 +397,7 @@ tr.row-data:hover .del-goal-btn { opacity: 1; }
     <button class="btn btn-ghost" onclick="exportCSV()">📥 <span class="btn-icon-label">匯出 CSV</span></button>
     <button class="btn btn-ghost" onclick="document.getElementById('csv-file-input').click()">📤 <span class="btn-icon-label">匯入 CSV</span></button>
     <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="importCSV(this)">
+    <button class="btn btn-ghost" onclick="openRankModal()" style="background:rgba(168,85,247,.18);border-color:rgba(168,85,247,.4);color:#c084fc;">🏆 <span class="btn-icon-label">工作量排行榜</span></button>
   </div>
   <div class="toolbar-right">
     <span class="toolbar-title">篩選：</span>
@@ -415,7 +424,16 @@ tr.row-data:hover .del-goal-btn { opacity: 1; }
   <div class="summary-bar" id="summary-bar"></div>
 </div>
 
-<!-- Goal Modal -->
+<!-- Ranking Modal -->
+<div class="modal-overlay" id="modal-rank">
+  <div class="modal" style="width:600px;">
+    <div class="modal-title">🏆 工作量排行榜</div>
+    <div id="rank-chart"></div>
+    <div class="modal-footer" style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="closeModal('modal-rank')">關閉</button>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-goal">
   <div class="modal">
     <div class="modal-title">🎯 新增目標</div>
@@ -520,10 +538,11 @@ function getNote(gid,sn){return (S.checks[gid]&&S.checks[gid][sn+'_note'])||'';}
 
 function openNotePopup(gid, sn, cellEl) {
   closeNotePopup();
-  // Toggle check on first click
+  // Toggle check
   if(!S.checks[gid]) S.checks[gid]={};
   const wasChecked = !!S.checks[gid][sn];
   S.checks[gid][sn] = !wasChecked;
+  const newChecked = S.checks[gid][sn];
 
   const note = getNote(gid, sn);
   const popup = document.createElement('div');
@@ -533,7 +552,7 @@ function openNotePopup(gid, sn, cellEl) {
     <div class="note-popup-title">📝 ${sn} ・ 備註</div>
     <textarea id="note-textarea" placeholder="輸入備註內容（選填）...">${note}</textarea>
     <div class="note-popup-footer">
-      <button class="btn btn-cancel" style="padding:5px 12px;font-size:.78rem;" onclick="closeNotePopup()">取消</button>
+      <button class="btn btn-cancel" style="padding:5px 12px;font-size:.78rem;" onclick="cancelNote()">取消</button>
       <button class="btn btn-primary" style="padding:5px 12px;font-size:.78rem;" onclick="saveNote(${gid},'${esc(sn)}')">儲存</button>
     </div>`;
 
@@ -549,14 +568,26 @@ function openNotePopup(gid, sn, cellEl) {
   setTimeout(() => document.getElementById('note-textarea')?.focus(), 50);
 
   // Store pending state
-  popup._gid = gid; popup._sn = sn;
+  popup._gid = gid; popup._sn = sn; popup._wasChecked = wasChecked;
   render(); // refresh checkbox state
+}
+
+function cancelNote() {
+  const popup = document.getElementById('note-popup');
+  if (!popup) return;
+  const gid = popup._gid, sn = popup._sn, wasChecked = popup._wasChecked;
+  if(!S.checks[gid]) S.checks[gid]={};
+  S.checks[gid][sn] = wasChecked;
+  closeNotePopup();
+  render();
 }
 
 function saveNote(gid, sn) {
   const txt = document.getElementById('note-textarea')?.value || '';
   if(!S.checks[gid]) S.checks[gid]={};
   S.checks[gid][sn+'_note'] = txt;
+  // 有備註文字時強制維持勾選
+  if(txt.trim()) S.checks[gid][sn] = true;
   closeNotePopup();
   render();
   saveState();
@@ -566,10 +597,16 @@ function closeNotePopup() {
   document.getElementById('note-popup')?.remove();
 }
 
-// Close popup on outside click
+// Close popup on outside click - restore check state
 document.addEventListener('click', e => {
   const popup = document.getElementById('note-popup');
   if (popup && !popup.contains(e.target) && !e.target.closest('.check-cell')) {
+    const gid = popup._gid, sn = popup._sn, wasChecked = popup._wasChecked;
+    if(gid !== undefined && sn !== undefined) {
+      if(!S.checks[gid]) S.checks[gid]={};
+      S.checks[gid][sn] = wasChecked;
+      render();
+    }
     closeNotePopup();
   }
 });
@@ -729,12 +766,48 @@ function addGoal(){
 }
 function openStaffModal(){renderStaffEdit();openModal('modal-staff');}
 function renderStaffEdit(){
-  document.getElementById('staff-edit-list').innerHTML=S.staff.map((s,i)=>`
-    <div class="staff-edit-item">
+  const list = document.getElementById('staff-edit-list');
+  list.innerHTML = S.staff.map((s,i)=>`
+    <div class="staff-edit-item" draggable="true" data-idx="${i}"
+      ondragstart="dragStart(event,${i})"
+      ondragover="dragOver(event)"
+      ondrop="dragDrop(event,${i})"
+      ondragend="dragEnd(event)"
+      style="cursor:grab;">
+      <span style="color:#556;font-size:1rem;padding:0 4px;cursor:grab;flex-shrink:0;">⠿</span>
       <input class="form-input" value="${s.name}" placeholder="姓名" onblur="updateStaffName(${i},this.value)" style="flex:1;min-width:0;padding:7px 9px;">
       <input class="form-input" value="${s.role||''}" placeholder="職稱" onblur="updateStaffRole(${i},this.value)" style="flex:1;min-width:0;padding:7px 9px;">
       <button class="btn btn-danger" style="padding:7px 10px;font-size:.78rem;" onclick="removeStaffIdx(${i})">刪除</button>
-    </div>`).join('')||'<p style="color:#445;font-size:.85rem;">尚無人員</p>';
+    </div>`).join('') || '<p style="color:#445;font-size:.85rem;">尚無人員</p>';
+}
+
+let _dragIdx = null;
+function dragStart(e, idx) {
+  _dragIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.target.style.opacity = '0.4', 0);
+}
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  // highlight drop target
+  document.querySelectorAll('.staff-edit-item').forEach(el => el.style.borderTop = '');
+  const target = e.currentTarget;
+  const targetIdx = parseInt(target.dataset.idx);
+  if (targetIdx !== _dragIdx) target.style.borderTop = '2px solid #3b82f6';
+}
+function dragDrop(e, toIdx) {
+  e.preventDefault();
+  if (_dragIdx === null || _dragIdx === toIdx) return;
+  const moved = S.staff.splice(_dragIdx, 1)[0];
+  S.staff.splice(toIdx, 0, moved);
+  _dragIdx = null;
+  renderStaffEdit();
+}
+function dragEnd(e) {
+  e.target.style.opacity = '';
+  document.querySelectorAll('.staff-edit-item').forEach(el => el.style.borderTop = '');
+  _dragIdx = null;
 }
 function updateStaffName(idx,n){
   n=n.trim();if(!n)return;
@@ -875,6 +948,47 @@ function parseCSV(text){
   }
   if(cell||row.length){row.push(cell);rows.push(row);}
   return rows;
+}
+
+// ── Ranking Chart ──
+function openRankModal() {
+  const goals = S.goals;
+  const totalGoals = goals.length;
+  const scores = S.staff.map(s => {
+    const checked = goals.filter(g => getChecked(g.id, s.name)).length;
+    return { name: s.name, role: s.role || '', checked };
+  }).sort((a, b) => b.checked - a.checked);
+
+  const max = scores[0]?.checked || 1;
+  const barColors = ['#f59e0b','#94a3b8','#b45309','#3b82f6','#22c55e','#a855f7','#14b8a6','#ef4444'];
+  const medals = ['🥇','🥈','🥉'];
+
+  let html = `<div style="margin-bottom:12px;font-size:.78rem;color:#8899aa;">共 ${totalGoals} 個目標・${S.staff.length} 位人員</div>`;
+  scores.forEach((s, i) => {
+    const pct = max > 0 ? Math.round(s.checked / max * 100) : 0;
+    const color = barColors[i % barColors.length];
+    const medal = medals[i] !== undefined ? medals[i] : `<span style="font-size:.78rem;color:#556;">${i+1}</span>`;
+    html += `
+      <div class="rank-item">
+        <span class="rank-medal">${medal}</span>
+        <span class="rank-name" title="${s.name}">${s.name}</span>
+        <span class="rank-role" title="${s.role}">${s.role}</span>
+        <div class="rank-bar-wrap">
+          <div class="rank-bar-bg">
+            <div class="rank-bar-fill" style="width:0%;background:${color}" data-pct="${pct}"></div>
+          </div>
+          <span class="rank-count">${s.checked}/${totalGoals}</span>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('rank-chart').innerHTML = html;
+  openModal('modal-rank');
+  setTimeout(() => {
+    document.querySelectorAll('.rank-bar-fill').forEach(el => {
+      el.style.width = el.dataset.pct + '%';
+    });
+  }, 50);
 }
 
 // ── Supabase 設定 ──
