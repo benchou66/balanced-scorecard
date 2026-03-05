@@ -92,7 +92,8 @@ body {
 }
 .sc-table thead tr.row-staff th.th-goal {
   text-align: left; padding-left: 18px;
-  width: 600px; min-width: 600px; font-size: .76rem; color: #8899aa; font-weight: 400;
+  width: 320px; min-width: 320px; font-size: .76rem; color: #8899aa; font-weight: 400;
+  position: sticky; left: 0; z-index: 3; background: #2a3349;
 }
 .sc-table thead tr.row-staff th.th-count {
   min-width: 100px; color: #8899aa; font-weight: 400; font-size: .76rem;
@@ -121,7 +122,9 @@ body {
 }
 .sc-table tbody tr.row-data:last-child td { border-bottom: none; }
 .sc-table tbody tr.row-data:hover td { background: rgba(255,255,255,.03); }
-.sc-table tbody tr.row-data td.td-goal { text-align: left; padding-left: 18px; width: 600px; min-width: 600px; }
+.sc-table tbody tr.row-data td.td-goal { text-align: left; padding-left: 18px; width: 320px; min-width: 320px; position: sticky; left: 0; z-index: 2; background: #232b3e; }
+.sc-table tbody tr.row-data:hover td.td-goal { background: #263040; }
+.sc-table tfoot tr.row-footer td.td-goal-label { position: sticky; left: 0; z-index: 2; background: #1e2536; }
 
 .goal-wrap { display: flex; align-items: flex-start; gap: 7px; width: 100%; }
 .persp-badge {
