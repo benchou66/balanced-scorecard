@@ -123,7 +123,7 @@ body {
 .sc-table tbody tr.row-data:hover td { background: rgba(255,255,255,.03); }
 .sc-table tbody tr.row-data td.td-goal { text-align: left; padding-left: 18px; width: 600px; min-width: 600px; }
 
-.goal-wrap { display: flex; align-items: center; gap: 7px; }
+.goal-wrap { display: flex; align-items: flex-start; gap: 7px; width: 100%; }
 .persp-badge {
   font-size: .65rem; font-weight: 700;
   padding: 2px 7px; border-radius: 99px; color: #fff;
@@ -132,8 +132,8 @@ body {
 .goal-name {
   outline: none; border-bottom: 1px dashed transparent;
   transition: border .15s; cursor: pointer;
-  font-size: .88rem; color: #dde6f4; line-height: 1.4;
-  display: block; width: 100%; white-space: normal; word-break: break-word;
+  font-size: .88rem; color: #dde6f4; line-height: 1.6;
+  flex: 1; min-width: 0; white-space: normal; word-break: break-word;
 }
 .goal-name:hover, .goal-name:focus { border-bottom-color: #3b82f6; }
 .del-goal-btn {
