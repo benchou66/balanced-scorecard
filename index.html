@@ -92,7 +92,7 @@ body {
 }
 .sc-table thead tr.row-staff th.th-goal {
   text-align: left; padding-left: 18px;
-  min-width: 600px; font-size: .76rem; color: #8899aa; font-weight: 400;
+  width: 600px; min-width: 600px; font-size: .76rem; color: #8899aa; font-weight: 400;
 }
 .sc-table thead tr.row-staff th.th-count {
   min-width: 100px; color: #8899aa; font-weight: 400; font-size: .76rem;
@@ -121,7 +121,7 @@ body {
 }
 .sc-table tbody tr.row-data:last-child td { border-bottom: none; }
 .sc-table tbody tr.row-data:hover td { background: rgba(255,255,255,.03); }
-.sc-table tbody tr.row-data td.td-goal { text-align: left; padding-left: 18px; }
+.sc-table tbody tr.row-data td.td-goal { text-align: left; padding-left: 18px; width: 600px; min-width: 600px; }
 
 .goal-wrap { display: flex; align-items: center; gap: 7px; }
 .persp-badge {
@@ -133,6 +133,7 @@ body {
   outline: none; border-bottom: 1px dashed transparent;
   transition: border .15s; cursor: pointer;
   font-size: .88rem; color: #dde6f4; line-height: 1.4;
+  display: block; width: 100%; white-space: normal; word-break: break-word;
 }
 .goal-name:hover, .goal-name:focus { border-bottom-color: #3b82f6; }
 .del-goal-btn {
